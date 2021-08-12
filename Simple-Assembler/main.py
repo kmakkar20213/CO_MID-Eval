@@ -21,7 +21,78 @@ def length_adjuster(s):
         c= 8- len(s)
         return "0"*c + s
 
+def check_if_hlt_last_and_hlt(line):
+    index=-1
+    for i in range(len(line)):
+        g=line[i].split()
+        if(g[1]== "hlt"):
+            index= g[0]
+            break
+    if(index!=-1):
 
+        s= line[int(index)+1].split()
+
+        if s=="var":
+            return True
+        else:
+            return False
+    else:
+        return False #if index stays -1 means no hlt conditon
+
+def typo_in_name(line):
+    for i in range(len(line)):
+        g=line.split()
+        if not(isinstance(g[0],int)): #if each line is not getting a number before it this means that start point is not
+            return False              #instruction or variable
+        return True
+
+def check_valid_reg_name(s):
+    if s in register.keys():
+        return True
+    return False #modify all functions to handle this
+
+def check_var_in_begin(lines):
+     index=-1
+     for i in range(len(lines)):
+         line=lines[i].split()
+         if(line[0]!="var"):
+             index=i
+             break
+
+     if(index!=-1):
+         for i in range(index+1, len(lines)):
+             line=lines[i].split()
+             if(line[0]=="var"):
+                 return False
+
+         return True
+     else:
+         #this would be case that code only contains variable declaration
+         return True
+
+
+def check_illegal_immediate_value(s):
+    if int(s)>=0 and int(s)<=255:
+        return True
+    return False
+
+def check_undefined_variables(s):
+    if s in var_dict.keys():
+        return True
+    return  False
+
+def check_undefined_labels(s):
+    if s in label_dict.keys():
+        return True
+    return  False
+
+
+
+
+
+
+
+#def check_hlt_last(line):
 
 
 
@@ -40,26 +111,48 @@ f.close()
 
 line=[]
 c=0
+#print(lines)
+
+
 
 for i in range(len(lines)):
 
     g=(lines[i]).split()
+    #print(g)
 
 
     x=g[0]
+
+
+
     if ":" in x:
-        y= g[0][0:len(g[0])-2] #this is label type command
-        label_dict[y]= c       #store label address in dict
+        if(len(g)!=1): #if len is 1 it means no instruction after label
 
-        s=g[1]                 #in case of label next command is instruction #write case if not command
-        if (s in opcodes.keys()):
-            b = ""
-            for i in g:
-                b = b + str(i) + " "
 
-            a = str(c) + str(" ") + b
-            line.append(a)
-            c = c + 1
+            y= g[0][0:len(g[0])-1] #this is label type command
+            if(y not in label_dict.keys()):
+                print(y)
+                label_dict[y]= c      #store label address in dict
+                s = g[1]
+
+                # in case of label next command is instruction #write case if not command
+                if (s in opcodes.keys()):
+                    b = y + " "
+                    for i in range(1, len(g)):
+                        b = b + str(g[i]) + " "
+
+
+                    a = str(c) + str(" ") + b
+                    line.append(a)
+                    c = c + 1
+
+
+            else:
+                print("error, you have already declared this label")
+
+
+        elif(len(g)==1):
+            print("no instruction after label")
 
 
 
@@ -98,174 +191,475 @@ for i in range(len(lines)):
         c=c+1
 
     #write code for unidentifiable object command present but it can be label.. i think we gotta check label:
-#print(line)
+print(line)
+#checker=check_if_hlt_last_and_hlt(line)
+#if(checker==False):
+    #print("halt is not last instruction or missing halt")
+
 #print("merii")
-
-
 for i in range (len(line)):
     sub_line= line[i].split()
+    to_find = sub_line[1]
 
-    if(len(sub_line)==2):
-        sub_line[1]= "1001100000000000"
-        line[i]=sub_line[1]
-        #this instruction is hlt #type-f
+    if(to_find=="hlt"):  #instruction-1
+        sub_line[1] = "1001100000000000"
+        line[i] = sub_line[1]
 
+    elif(to_find == "jgt" or to_find == "je" or to_find == "jmp" or to_find == "jlt"): #instruction-2,3,4,5
+        op_code_value = opcodes[to_find]
+        syntax_check = check_undefined_labels(sub_line[2])
+        if (syntax_check):
+            line[i] = str(op_code_value) + "000" + length_adjuster(str(decimalToBinary(int(label_dict[sub_line[2]]))))
+        elif (to_find != "var"):
+            print("invalid syntax for given opcode of jump type!!")
 
+    elif(to_find== "mov"): #instruction-6,7
+        syntax_check = check_valid_reg_name(sub_line[2])
 
-    elif(len(sub_line)==3):
-        # this is either of the jump instructions or var x declaration
-        to_find= sub_line[1]
-        if(to_find != "var"):
-            op_code_value = opcodes[to_find]
-            line[i]= str(op_code_value) +"000"+ length_adjuster(str(decimalToBinary(int(label_dict[sub_line[2]]))))
-            #meed to ask on classsroom how is mem adrres given? as 8 bits
-            #or we need to make it to 8 bits
+        if (syntax_check):
 
-    elif(len(sub_line)==4):
-        #move instruction, load, store, div, rs, ls, not, cmp,
-        to_find=sub_line[1]
-        if(to_find== "mov"):
-            # in this case we need to see if this is move immediate or move from another register
+            if (
 
-            if(sub_line[3]=="R0" or sub_line[3]=="R1" or sub_line[3]=="R2" or sub_line[3]=="R3" or
-               sub_line[3]=="R4" or sub_line[3]=="R5" or sub_line[3]=="R6" or sub_line[3]=="R7"):
-                op_code_value= str(opcodes["mov_r"])
-                line[i]= str(op_code_value) + "00000" + str(register[sub_line[2]])+ str(register[sub_line[3]])
+                    sub_line[3] == "R0" or sub_line[3] == "R1" or sub_line[3] == "R2" or sub_line[3] == "R3" or
+                    sub_line[3] == "R4" or sub_line[3] == "R5" or sub_line[3] == "R6" or sub_line[3] == "R7" or
+                    sub_line[3] == "FLAGS"):
+
+                op_code_value = str(opcodes["mov_r"])
+                line[i] = str(op_code_value) + "00000" + str(register[sub_line[2]]) + str(register[sub_line[3]])
+
+            elif ("$" in sub_line[3]):
+                op_code_value = str(opcodes["mov"])
+                remove_dollar = int(sub_line[3][1:len(sub_line[3])])  # omit the dollar sign
+                if (check_illegal_immediate_value(remove_dollar)):
+
+                    # print("ggggg")
+                    # print(remove_dollar)
+                    bin_equi = length_adjuster(str(decimalToBinary(remove_dollar)))
+
+                    line[i] = str(op_code_value) + str(register[sub_line[2]]) + bin_equi
+                else:
+                    print("illegal immediate value used!")
+
             else:
-                op_code_value= str(opcodes["mov"])
-                remove_dollar= int(sub_line[3][1:len(sub_line[3])]) #omit the dollar sign
-                #print("ggggg")
-                #print(remove_dollar)
-                bin_equi=  length_adjuster(str(decimalToBinary(remove_dollar)))
+                print(line[i])
+                print("invalid register used!")
 
-                line[i]= str(op_code_value) + str(register[sub_line[2]]) + bin_equi
+        else:
+            print("invalid register used!!")
 
-        elif (to_find == "ld"):
-            a= str(opcodes[to_find])      #opcode ka binary
-            b= register[sub_line[2]] #pass register value to get its binary
+    elif(to_find == "ld"): #instruction-8
+        a = str(opcodes[to_find])  # opcode ka binary
 
-            c= length_adjuster(str(decimalToBinary(int(var_dict[sub_line[3]]))))
-            line[i]= a+b+c
+        syntax_check = check_valid_reg_name((sub_line[2])) and check_undefined_variables(sub_line[3])
+        if (syntax_check):
+            b = register[sub_line[2]]  # pass register value to get its binary
 
-        elif(to_find=="st"):
-            a= str(opcodes[to_find])
-            b= register[sub_line[2]]
-            print(sub_line[3])
-            c= length_adjuster(str(decimalToBinary(int(var_dict[sub_line[3]]))))
-            line[i]= a+b+c
+            c = length_adjuster(str(decimalToBinary(int(var_dict[sub_line[3]]))))
+            line[i] = a + b + c
+        else:
+            print("invalid register used!")
 
-        elif(to_find=="div"):
-            a=str(opcodes[to_find])
-            b="00000"
-            c=sub_line[2]
-            d=sub_line[3]
-            line[i]= a+b+c+d
+    elif (to_find == "st"): #instruction-9
+        a = str(opcodes[to_find])
+        syntax_check = check_valid_reg_name((sub_line[2])) and check_undefined_variables(sub_line[3])
+        if (syntax_check):
+            b = register[sub_line[2]]
+            # print(sub_line[3])
+            c = length_adjuster(str(decimalToBinary(int(var_dict[sub_line[3]]))))
+            line[i] = a + b + c
+        else:
+            print("invalid register used or undefined variable input!")
 
-        elif(to_find=="rs"):
-            a = str(opcodes[to_find])
-            b= register[sub_line[2]]
 
-            remove_dollar = int(sub_line[3][1:len(sub_line[3])])  # omit the dollar sign
-            bin_equi = length_adjuster(str(decimalToBinary(remove_dollar)))
+    elif (to_find == "div"): #instruction-10
+        a = str(opcodes[to_find])
+        b = "00000"
+        syntax_check = check_valid_reg_name((sub_line[2])) and check_valid_reg_name((sub_line[3]))
+        if (syntax_check):
+            c = sub_line[2]
+            d = sub_line[3]
+            line[i] = a + b + c + d
+        else:
+            print("invalid register used!")
 
-            line[i] = a + b + bin_equi
-
-        elif (to_find == "ls"):
-            a = str(opcodes[to_find])
+    elif (to_find == "rs"): #instruction-11
+        a = str(opcodes[to_find])
+        syntax_check = check_valid_reg_name((sub_line[2]))
+        if (syntax_check):
             b = register[sub_line[2]]
 
             remove_dollar = int(sub_line[3][1:len(sub_line[3])])  # omit the dollar sign
-            bin_equi = length_adjuster(str(decimalToBinary(remove_dollar)))
+            if (check_illegal_immediate_value(remove_dollar)):
+                bin_equi = length_adjuster(str(decimalToBinary(remove_dollar)))
 
-            line[i] = a + b + bin_equi
+                line[i] = a + b + bin_equi
+            else:
+                print("invalid immediate value used!!")
+        else:
+            print("invalid register used!")
 
-        elif (to_find == "not"):
+    elif (to_find == "ls"): #instruction-12
+        a = str(opcodes[to_find])
+        syntax_check = check_valid_reg_name((sub_line[2]))
+        if (syntax_check):
+
+            b = register[sub_line[2]]
+
+            remove_dollar = int(sub_line[3][1:len(sub_line[3])])  # omit the dollar sign
+            if (check_illegal_immediate_value(remove_dollar)):
+                bin_equi = length_adjuster(str(decimalToBinary(remove_dollar)))
+
+                line[i] = a + b + bin_equi
+            else:
+                print("invalid immediate value used!!")
+
+        else:
+            print("invalid register used!")
+
+
+    elif (to_find == "not"): #instruction-13
+        syntax_check = check_valid_reg_name((sub_line[2])) and check_valid_reg_name((sub_line[3]))
+        if (syntax_check):
+
             a = str(opcodes[to_find])
             b = "00000"
             c = register[sub_line[2]]
             d = register[sub_line[3]]
             line[i] = a + b + c + d
 
-        elif (to_find == "cmp"):
+        else:
+            print("invalid register used!")
+
+    elif (to_find == "cmp"): #instruction-14
+        syntax_check = check_valid_reg_name((sub_line[2])) and check_valid_reg_name((sub_line[3]))
+        if (syntax_check):
             a = str(opcodes[to_find])
             b = "00000"
             c = register[sub_line[2]]
             d = register[sub_line[3]]
             line[i] = a + b + c + d
 
+        else:
+            print("invalid register used!")
+    #else:
+        #print("2 invalid syntax for given opcode!!")
 
-    elif(len(sub_line)==5):
-        to_find = sub_line[1]
-        #add, sub, mul, xor, or, and
-        if (to_find == "add"):
-            a = str(opcodes[to_find])
-            b="00"
-            c=register[sub_line[2]]
-            d=register[sub_line[3]]
-            e=register[sub_line[4]]
-            line[i] = a + b + c + d + e
+    elif(to_find == "add"): #instruction-15
+            syntax_check = check_valid_reg_name((sub_line[2])) and check_valid_reg_name((sub_line[3])) and check_valid_reg_name((sub_line[4]))
+            if (syntax_check):
+                a = str(opcodes[to_find])
+                b="00"
+                c=register[sub_line[2]]
+                d=register[sub_line[3]]
+                e=register[sub_line[4]]
+                line[i] = a + b + c + d + e
+            else:
+                print("3 invalid register used!")
 
-
-        elif (to_find == "sub"):
-            a = str(opcodes[to_find])
-            b = "00"
-            c = register[sub_line[2]]
-            d = register[sub_line[3]]
-            e = register[sub_line[4]]
-            line[i] = a + b + c + d + e
-
-
-        elif (to_find == "mul"):
+    elif (to_find == "sub"): #instruction-16
+        syntax_check = check_valid_reg_name((sub_line[2])) and check_valid_reg_name(
+            (sub_line[3])) and check_valid_reg_name((sub_line[4]))
+        if (syntax_check):
             a = str(opcodes[to_find])
             b = "00"
             c = register[sub_line[2]]
             d = register[sub_line[3]]
             e = register[sub_line[4]]
             line[i] = a + b + c + d + e
+        else:
+            print("invalid register used!")
 
 
-        elif (to_find == "xor"):
+
+
+    elif (to_find == "mul"): #instruction-17
+        syntax_check = check_valid_reg_name((sub_line[2])) and check_valid_reg_name(
+            (sub_line[3])) and check_valid_reg_name((sub_line[4]))
+        if (syntax_check):
             a = str(opcodes[to_find])
             b = "00"
             c = register[sub_line[2]]
             d = register[sub_line[3]]
             e = register[sub_line[4]]
             line[i] = a + b + c + d + e
+        else:
+            print("invalid register used!")
 
 
-        elif (to_find == "or"):
+
+    elif (to_find == "xor"): #instruction-18
+        syntax_check = check_valid_reg_name((sub_line[2])) and check_valid_reg_name(
+            (sub_line[3])) and check_valid_reg_name((sub_line[4]))
+        if (syntax_check):
             a = str(opcodes[to_find])
             b = "00"
             c = register[sub_line[2]]
             d = register[sub_line[3]]
             e = register[sub_line[4]]
             line[i] = a + b + c + d + e
+        else:
+            print("invalid register used!")
 
 
-        elif (to_find == "and"):
+    elif (to_find == "or"): #instruction-19
+        syntax_check = check_valid_reg_name((sub_line[2])) and check_valid_reg_name(
+            (sub_line[3])) and check_valid_reg_name((sub_line[4]))
+        if (syntax_check):
             a = str(opcodes[to_find])
             b = "00"
             c = register[sub_line[2]]
             d = register[sub_line[3]]
             e = register[sub_line[4]]
             line[i] = a + b + c + d + e
+        else:
+            print("invalid register used!")
 
 
-print(line)
+    elif (to_find == "and"): #instruction-20
+        syntax_check = check_valid_reg_name((sub_line[2])) and check_valid_reg_name(
+            (sub_line[3])) and check_valid_reg_name((sub_line[4]))
+        if (syntax_check):
+            a = str(opcodes[to_find])
+            b = "00"
+            c = register[sub_line[2]]
+            d = register[sub_line[3]]
+            e = register[sub_line[4]]
+            line[i] = a + b + c + d + e
+        else:
+            print("invalid register used!")
+
+    elif(to_find in label_dict.keys()):
+        instruction= sub_line[2]
+        if(instruction in opcodes.keys()): # this check if instruction after label is valid or not
+
+            op_code_value=opcodes[instruction]
+
+            if(len(sub_line)==3):
+                # this instruction is halt
+                line[i] = "1001100000000000"
+
+            elif (len(sub_line) == 4):
+                # this is either of the jump instructions
+                line[i] = str(op_code_value) + "000" + length_adjuster(str(decimalToBinary(int(label_dict[sub_line[3]]))))
+
+            elif(len(sub_line) == 5):
+                # move instruction, load, store, div, rs, ls, not, cmp,
+                if (instruction == "mov"):
+                    syntax_check = check_valid_reg_name(sub_line[3])
+
+                    if (syntax_check):
+
+                        if (
+
+                             sub_line[4] == "R0" or sub_line[4] == "R1" or sub_line[4] == "R2" or sub_line[
+                            4] == "R3" or
+                                sub_line[4] == "R4" or sub_line[4] == "R5" or sub_line[4] == "R6" or sub_line[
+                            4] == "R7" or sub_line[4] == "FLAGS"):
+
+                            op_code_value = str(opcodes["mov_r"])
+                            line[i] = str(op_code_value) + "00000" + str(register[sub_line[3]]) + str(
+                                register[sub_line[4]])
+
+                        elif ("$" in sub_line[4]):
+                            op_code_value = str(opcodes["mov"])
+                            remove_dollar = int(sub_line[3][1:len(sub_line[4])])  # omit the dollar sign
+                            if (check_illegal_immediate_value(remove_dollar)):
+
+                                # print("ggggg")
+                                # print(remove_dollar)
+                                bin_equi = length_adjuster(str(decimalToBinary(remove_dollar)))
+
+                                line[i] = str(op_code_value) + str(register[sub_line[3]]) + bin_equi
+                            else:
+                                print("illegal immediate value used!")
+                        else:
+                            #print(line[i])
+                            print("invalid register used!")
+
+                    else:
+                        print("invalid register used!!")
+
+                elif (instruction == "ld"):
+                    a = str(opcodes[instruction])  # opcode ka binary
+
+                    syntax_check = check_valid_reg_name((sub_line[3])) and check_undefined_variables(sub_line[4])
+                    if (syntax_check):
+                        b = register[sub_line[3]]  # pass register value to get its binary
+
+                        c = length_adjuster(str(decimalToBinary(int(var_dict[sub_line[3]]))))
+                        line[i] = a + b + c
+                    else:
+                        print("invalid register used!")
+
+                elif (instruction == "st"):
+                    a = str(opcodes[instruction])
+                    syntax_check = check_valid_reg_name((sub_line[3])) and check_undefined_variables(sub_line[4])
+                    if (syntax_check):
+                        b = register[sub_line[3]]
+                        # print(sub_line[3])
+                        c = length_adjuster(str(decimalToBinary(int(var_dict[sub_line[4]]))))
+                        line[i] = a + b + c
+                    else:
+                        print("invalid register used or undefined variable input!")
+
+                elif (instruction == "div"):
+                    a = str(opcodes[instruction])
+                    b = "00000"
+                    syntax_check = check_valid_reg_name((sub_line[3])) and check_valid_reg_name((sub_line[4]))
+                    if (syntax_check):
+                        c = sub_line[3]
+                        d = sub_line[4]
+                        line[i] = a + b + c + d
+                    else:
+                        print("invalid register used!")
+
+                elif (to_find == "rs"):
+                    a = str(opcodes[instruction])
+                    syntax_check = check_valid_reg_name((sub_line[3]))
+                    if (syntax_check):
+                        b = register[sub_line[3]]
+
+                        remove_dollar = int(sub_line[4][1:len(sub_line[4])])  # omit the dollar sign
+                        if (check_illegal_immediate_value(remove_dollar)):
+                            bin_equi = length_adjuster(str(decimalToBinary(remove_dollar)))
+
+                            line[i] = a + b + bin_equi
+                        else:
+                            print("invalid immediate value used!!")
+                    else:
+                        print("invalid register used!")
+
+                elif (to_find == "ls"):
+                    a = str(opcodes[instruction])
+                    syntax_check = check_valid_reg_name((sub_line[3]))
+                    if (syntax_check):
+
+                        b = register[sub_line[3]]
+
+                        remove_dollar = int(sub_line[4][1:len(sub_line[4])])  # omit the dollar sign
+                        if (check_illegal_immediate_value(remove_dollar)):
+                            bin_equi = length_adjuster(str(decimalToBinary(remove_dollar)))
+
+                            line[i] = a + b + bin_equi
+                        else:
+                            print("invalid immediate value used!!")
+
+                    else:
+                        print("invalid register used!")
+                elif (to_find == "not"):
+                    syntax_check = check_valid_reg_name((sub_line[3])) and check_valid_reg_name((sub_line[4]))
+                    if (syntax_check):
+
+                        a = str(opcodes[instruction])
+                        b = "00000"
+                        c = register[sub_line[3]]
+                        d = register[sub_line[4]]
+                        line[i] = a + b + c + d
+
+                    else:
+                        print("invalid register used!")
+
+                elif (to_find == "cmp"):
+                    syntax_check = check_valid_reg_name((sub_line[3])) and check_valid_reg_name((sub_line[4]))
+                    if (syntax_check):
+                        a = str(opcodes[instruction])
+                        b = "00000"
+                        c = register[sub_line[3]]
+                        d = register[sub_line[4]]
+                        line[i] = a + b + c + d
+
+                    else:
+                        print("invalid register used!")
+
+            elif(len(sub_line)==6):
+                if (instruction == "add"):
+                    syntax_check = check_valid_reg_name((sub_line[3])) and check_valid_reg_name(
+                        (sub_line[4])) and check_valid_reg_name((sub_line[5]))
+                    if (syntax_check):
+                        a = str(opcodes[instruction])
+                        b = "00"
+                        c = register[sub_line[3]]
+                        d = register[sub_line[4]]
+                        e = register[sub_line[5]]
+                        line[i] = a + b + c + d + e
+                    else:
+                        print("3 invalid register used!")
+
+
+
+                elif (instruction == "sub"):
+                    syntax_check = check_valid_reg_name((sub_line[3])) and check_valid_reg_name(
+                        (sub_line[4])) and check_valid_reg_name((sub_line[5]))
+                    if (syntax_check):
+                        a = str(opcodes[instruction])
+                        b = "00"
+                        c = register[sub_line[3]]
+                        d = register[sub_line[4]]
+                        e = register[sub_line[5]]
+                        line[i] = a + b + c + d + e
+                    else:
+                        print("invalid register used!")
 
 
 
 
+                elif (to_find == "mul"):
+                    syntax_check = check_valid_reg_name((sub_line[3])) and check_valid_reg_name(
+                        (sub_line[4])) and check_valid_reg_name((sub_line[5]))
+                    if (syntax_check):
+                        a = str(opcodes[instruction])
+                        b = "00"
+                        c = register[sub_line[3]]
+                        d = register[sub_line[4]]
+                        e = register[sub_line[5]]
+                        line[i] = a + b + c + d + e
+                    else:
+                        print("invalid register used!")
 
 
 
+                elif (to_find == "xor"):
+                    syntax_check = check_valid_reg_name((sub_line[3])) and check_valid_reg_name(
+                        (sub_line[4])) and check_valid_reg_name((sub_line[5]))
+                    if (syntax_check):
+                        a = str(opcodes[instruction])
+                        b = "00"
+                        c = register[sub_line[3]]
+                        d = register[sub_line[4]]
+                        e = register[sub_line[5]]
+                        line[i] = a + b + c + d + e
+                    else:
+                        print("invalid register used!")
 
 
+                elif (to_find == "or"):
+                    syntax_check = check_valid_reg_name((sub_line[3])) and check_valid_reg_name(
+                        (sub_line[4])) and check_valid_reg_name((sub_line[5]))
+                    if (syntax_check):
+                        a = str(opcodes[instruction])
+                        b = "00"
+                        c = register[sub_line[3]]
+                        d = register[sub_line[4]]
+                        e = register[sub_line[5]]
+                        line[i] = a + b + c + d + e
+                    else:
+                        print("invalid register used!")
 
 
+                elif (to_find == "and"):
+                    syntax_check = check_valid_reg_name((sub_line[3])) and check_valid_reg_name(
+                        (sub_line[4])) and check_valid_reg_name((sub_line[5]))
+                    if (syntax_check):
+                        a = str(opcodes[instruction])
+                        b = "00"
+                        c = register[sub_line[3]]
+                        d = register[sub_line[4]]
+                        e = register[sub_line[5]]
+                        line[i] = a + b + c + d + e
+                    else:
+                        print("invalid register used!")
 
-
-
-
-
-
+for i in range(len(line)):
+    g=line[i].split()
+    if(len(g)==1):
+        print(g[0])
