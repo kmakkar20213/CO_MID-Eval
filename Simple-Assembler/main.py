@@ -28,7 +28,7 @@ def check_if_hlt_last(line):
 
     for i in range(len(line)):
         g=line[i].split()
-        print(g)
+
         if(g[1]== "hlt" or g[2]=="hlt"):
             index= g[0]
             break
@@ -149,7 +149,7 @@ f.close()
 
 line=[]
 c=0
-print(lines)
+#print(lines)
 
 
 for i in range(len(lines)):
@@ -218,7 +218,7 @@ for i in range(len(lines)):
 for i in range(len(lines)):
 
     if (len(lines[i]) != 0):
-        print(lines[i])
+        #print(lines[i])
         g=(lines[i]).split()
 
 
@@ -249,7 +249,7 @@ for i in range(len(lines)):
             error_counter = error_counter + 1
 
 
-print(line)
+#print(line)
 
 
 #checks for multiple hlts
