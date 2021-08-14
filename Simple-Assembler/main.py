@@ -21,11 +21,13 @@ instruction_length ={ "add":"4" ,  "sub":"4" , "mov":"3", "mov_r": "3", "ld": "3
 def decimalToBinary(n):
     return "{0:b}".format(int(n))
 
+ 
 def length_adjuster(s):
     if(len(s)<8):
         c= 8- len(s)
         return "0"*c + s
 
+    
 def check_if_hlt_last(line):
     index=-1
 
