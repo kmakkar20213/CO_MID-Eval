@@ -1,4 +1,4 @@
-
+import sys
 opcodes= {
  "add":"00000" ,  "sub":"00001" , "mov":"00010", "mov_r": "00011", "ld": "00100" , "st": "00101", "mul": "00110",
  "div": "00111",  "rs":"01000", "ls": "01001", "xor":"01010", "or": "01011", "and": "01100", "not":"01101",
@@ -189,9 +189,12 @@ def check_arguments_after_instruction(lines):
 
 
 error_counter=0
-f= open(r"C:\Users\Bhan\Desktop\demo.txt")
+'''f= open(r"input.txt")'''
+complete_input = sys.stdin.read()
 
-lines=[]
+lines=(complete_input.split("\n"))
+
+'''lines=[]
 while True:
     x= f.readline()  # this returns the each line that ends with /n , basically used to separate commands
 
@@ -199,7 +202,7 @@ while True:
         break
     lines.append(x.strip()) #store in a list the new lines, using strip to remove extra white spaces if any
 f.close()
-
+'''
 line=[]
 c=0
 
@@ -987,6 +990,7 @@ if(error_counter==0):
                     else:
                         print("invalid syntax given for instruction " + instruction)
                         error_counter=error_counter+1
+
 
 
 
