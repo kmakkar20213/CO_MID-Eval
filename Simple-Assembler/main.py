@@ -1,4 +1,4 @@
-import sys
+
 opcodes= {
  "add":"00000" ,  "sub":"00001" , "mov":"00010", "mov_r": "00011", "ld": "00100" , "st": "00101", "mul": "00110",
  "div": "00111",  "rs":"01000", "ls": "01001", "xor":"01010", "or": "01011", "and": "01100", "not":"01101",
@@ -112,17 +112,16 @@ def count_multiple_hlt(line):
 
     return c
 
-def find_line_number(line):
+def find_line_number(line, lines):
     c=1
-    f=open(r"C:\Users\Bhan\Desktop\demo.txt")
-    while True:
-        x = f.readline()  # this returns the each line that ends with /n , basically used to separate commands
-        final_line= x.strip()
-        if final_line == line:
+
+    for i in range(len(lines)):
+        if(line==lines[i]):
             c=c+1
             break
         else:
             c=c+1
+
     return c
 
 def find_line_number_2(line, lines):
@@ -189,12 +188,9 @@ def check_arguments_after_instruction(lines):
 
 
 error_counter=0
-'''f= open(r"input.txt")'''
-complete_input = sys.stdin.read()
+f= open(r"C:\Users\Bhan\Desktop\demo.txt")
 
-lines=(complete_input.split("\n"))
-
-'''lines=[]
+lines=[]
 while True:
     x= f.readline()  # this returns the each line that ends with /n , basically used to separate commands
 
@@ -202,7 +198,7 @@ while True:
         break
     lines.append(x.strip()) #store in a list the new lines, using strip to remove extra white spaces if any
 f.close()
-'''
+
 line=[]
 c=0
 
@@ -240,20 +236,20 @@ for i in range(len(lines)):
                         line.append(a)
                         c = c + 1
                     else:
-                        line_number = find_line_number(lines[i])
-                        print("label not followed by valid command at line"+str(find_line_number(lines[i]) -1))
+                        line_number = find_line_number(lines[i],lines)
+                        print("label not followed by valid command at line"+str(line_number-1))
                         error_counter = error_counter + 1
 
 
                 else:
-                    line_number = find_line_number(lines[i])
-                    print("error at line" + str(find_line_number(lines[i]) -1) + ". you have already declared this label")
+                    line_number = find_line_number(lines[i],lines)
+                    print("error at line" + str(line_number-1) + ". you have already declared this label")
                     error_counter = error_counter+1
 
 
             elif(len(g)==1):
-                line_number = find_line_number(lines[i])
-                print("error at line" + str(find_line_number(lines[i]) -1) + " no instruction after label")
+                line_number = find_line_number(lines[i],lines)
+                print("error at line" + str((line_number) -1) + " no instruction after label")
                 error_counter = error_counter + 1
 
 
@@ -269,7 +265,7 @@ for i in range(len(lines)):
             c=c+1
 
         elif(x !="var"):
-            line_number = str(find_line_number(lines[i]) -1)
+            line_number = str(find_line_number(lines[i], lines) -1)
             print("unidentified command: "+ str(x)+ " given at line "+ line_number)
             error_counter = error_counter + 1
 
@@ -304,12 +300,12 @@ for i in range(len(lines)):
 
                 c=c+1
             elif(x=="var" and t in var_dict.keys()):
-                line_number=find_line_number(lines[i])
+                line_number=find_line_number(lines[i], lines)
                 print("error! trying to re-define a variable at line "+ str(line_number-1)) #re-defining of variables case
                 error_counter = error_counter + 1
 
         elif(x=="var"):
-            line_number = find_line_number(lines[i])
+            line_number = find_line_number(lines[i], lines)
             print("error at line"+ str(line_number -1) + ". variable name not declared!")
             error_counter = error_counter + 1
 
@@ -990,7 +986,6 @@ if(error_counter==0):
                     else:
                         print("invalid syntax given for instruction " + instruction)
                         error_counter=error_counter+1
-
 
 
 
