@@ -14,6 +14,9 @@ register= {
 label_dict= {}
 var_dict={}
 
+instruction_length ={ "add":"4" ,  "sub":"4" , "mov":"3", "mov_r": "3", "ld": "3" , "st": "3", "mul": "4",
+ "div": "3",  "rs":"3", "ls": "3", "xor":"4", "or": "4", "and": "4", "not":"3",
+ "cmp": "3",  "jmp": "2", "jlt": "2", "jgt": "2", "je": "2", "hlt": "1" }
 
 def decimalToBinary(n):
     return "{0:b}".format(int(n))
@@ -29,7 +32,7 @@ def check_if_hlt_last(line):
     for i in range(len(line)):
         g=line[i].split()
 
-        if(g[1]== "hlt" or g[2]=="hlt"):
+        if(g[1]== "hlt" or (len(g)>2 and g[2]=="hlt" ) ):
             index= g[0]
             break
 
@@ -59,14 +62,14 @@ def check_var_in_begin(lines):
      index=-1
      for i in range(len(lines)):
          line=lines[i].split()
-         if(line[0]!="var"):
+         if(len(line)!=0 and line[0]!="var"): #if empty line then ignore
              index=i
              break
 
      if(index!=-1):
          for i in range(index+1, len(lines)):
              line=lines[i].split()
-             if(line[0]=="var"):
+             if(len(line)!=0 and line[0]=="var"):
                  return False
 
          return True
@@ -101,7 +104,7 @@ def count_multiple_hlt(line):
 
         if(g[1]== "hlt"):
             c=c+1
-        elif(g[2]=="hlt"):
+        elif(len(g)>2 and g[2]=="hlt"):
             c=c+1
 
     return c
@@ -121,13 +124,59 @@ def find_line_number(line):
 
 def find_line_number_2(line, lines):
     c=1
+
+
+    a=line.split()
+
+
     for i in range(len(lines)):
         if(len(lines[i])!=0):
             g=lines[i].split()
-            if(g== line):
+            #print(g)
+            if(g== a):
                 break
             else:
                 c=c+1
+        else:
+            c=c+1
+
+    return c
+
+def check_illegal_flag_use(lines):
+     c = 0
+     for i in range(len(lines)):
+
+         if(len(lines[i])!=0):
+             g=lines[i].split()
+             if(g[0]!= "mov" and g[0] in opcodes.keys()):
+                 if((len(g)>1 and g[1]=="FLAGS") or (len(g)>2 and g[2]=="FLAGS")):
+                    print("illegal flag usage at line"+ str(i+1))
+                    c=c+1
+
+             elif(len(g)>2 and g[1]!="mov" and g[1] in opcodes.keys()):
+                 if(g[2]=="FLAGS" or (len(g)>3 and g[3]=="FLAGS")):
+                     print("illegal flag usage at line" + str(i + 1))
+                     c=c+1
+
+     return c
+
+def check_arguments_after_instruction(lines):
+    c=0
+    for i in range(len(lines)):
+        if (len(lines[i]) != 0):
+            g = lines[i].split()
+            if (g[0] in opcodes.keys()):
+               a= int(instruction_length[g[0]])
+               if((a)!=len(g)):
+                   c=c+1
+                   print("number of arguments required for instruction "+ g[0]+ " donot match syntax at line "+ str(i+1))
+
+            elif(len(g)>1 and g[1] in opcodes.keys()):
+                a = int(instruction_length[g[1]])
+                if ((a+1) != len(g)):
+                    c = c + 1
+                    print("number of arguments required for instruction " + g[1] + " donot match syntax at line " + str(
+                        i + 1))
 
     return c
 
@@ -135,13 +184,14 @@ def find_line_number_2(line, lines):
 
 
 
+
 error_counter=0
 f= open(r"C:\Users\Bhan\Desktop\demo.txt")
-#print(f.readlines())
+
 lines=[]
 while True:
     x= f.readline()  # this returns the each line that ends with /n , basically used to separate commands
-    #print(x)
+
     if not x:
         break
     lines.append(x.strip()) #store in a list the new lines, using strip to remove extra white spaces if any
@@ -149,7 +199,6 @@ f.close()
 
 line=[]
 c=0
-#print(lines)
 
 
 for i in range(len(lines)):
@@ -184,6 +233,10 @@ for i in range(len(lines)):
                         a = str(c) + str(" ") + b
                         line.append(a)
                         c = c + 1
+                    else:
+                        line_number = find_line_number(lines[i])
+                        print("label not followed by valid command at line"+str(find_line_number(lines[i]) -1))
+                        error_counter = error_counter + 1
 
 
                 else:
@@ -208,6 +261,12 @@ for i in range(len(lines)):
             a= str(c)+ str(" ") + b
             line.append(a)
             c=c+1
+
+        elif(x !="var"):
+            line_number = str(find_line_number(lines[i]) -1)
+            print("unidentified command: "+ str(x)+ " given at line "+ line_number)
+            error_counter = error_counter + 1
+
 
 
 
@@ -238,9 +297,9 @@ for i in range(len(lines)):
                 line.append(a)
 
                 c=c+1
-            elif(t in var_dict.keys()):
+            elif(x=="var" and t in var_dict.keys()):
                 line_number=find_line_number(lines[i])
-                print("error! trying to re-define a variable at line"+ str(line_number)) #re-defining of variables case
+                print("error! trying to re-define a variable at line "+ str(line_number-1)) #re-defining of variables case
                 error_counter = error_counter + 1
 
         elif(x=="var"):
@@ -249,24 +308,34 @@ for i in range(len(lines)):
             error_counter = error_counter + 1
 
 
-#print(line)
+if(error_counter==0):
+#check for variables in beginning
+    var_in_beg= check_var_in_begin(lines)
+    if(var_in_beg==False):
+        print("error! variables not defined in beginning!")
+        error_counter=error_counter+1
 
-
+if(error_counter==0):
 #checks for multiple hlts
-halt_checker1= count_multiple_hlt(line)
-if(halt_checker1==0):
-    print("missing hlt")
-    error_counter = error_counter + 1
-elif(halt_checker1>1):
-    print("multiple hlts used")
-    error_counter = error_counter + 1
-
-if(halt_checker1==1):
-
-    halt_checker2= check_if_hlt_last(line)
-    if(not halt_checker2):
-        print("halt is not last instruction")
+    halt_checker1= count_multiple_hlt(line)
+    if(halt_checker1==0):
+        print("error! missing hlt")
         error_counter = error_counter + 1
+    elif(halt_checker1>1):
+        print("error! multiple hlts used")
+        error_counter = error_counter + 1
+
+    if(halt_checker1==1):
+
+        halt_checker2= check_if_hlt_last(line)
+        if(not halt_checker2):
+            print("error! hlt is not last instruction")
+            error_counter = error_counter + 1
+
+#check for invalid flag use
+if(error_counter==0):
+    error_counter=error_counter + check_illegal_flag_use(lines)
+    error_counter=error_counter + check_arguments_after_instruction(lines)
 
 #check
 if(error_counter==0):
@@ -277,292 +346,342 @@ if(error_counter==0):
         sub_line= line[i].split()
         to_find = sub_line[1]
 
+
         if(to_find=="hlt"):  #instruction-1
-            sub_line[1] = "1001100000000000"
-            line[i] = sub_line[1]
+            if(len(sub_line) == 2):
+                sub_line[1] = "1001100000000000"
+                line[i] = sub_line[1]
+
+
 
         elif(to_find == "jgt" or to_find == "je" or to_find == "jmp" or to_find == "jlt"): #instruction-2,3,4,5
             op_code_value = opcodes[to_find]
-            syntax_check = check_undefined_labels(sub_line[2])
+            if (len(sub_line) == 3):
+                syntax_check = check_undefined_labels(sub_line[2])
 
-            if (syntax_check):
-                line[i] = str(op_code_value) + "000" + length_adjuster(str(decimalToBinary(int(label_dict[sub_line[2]]))))
-            elif (to_find != "var"):
-                error_on_line= str(find_line_number_2(str(sub_line[1]+ sub_line[2]), lines))
-                print("error at line" + error_on_line+  " invalid syntax for given opcode of " + str(to_find)+ " type!!")
-                error_counter = error_counter + 1
+                if (syntax_check):
+                    line[i] = str(op_code_value) + "000" + length_adjuster(str(decimalToBinary(int(label_dict[sub_line[2]]))))
+                elif (to_find != "var"):
+                    error_on_line= str(find_line_number_2(str(sub_line[1]+" "+ sub_line[2]), lines))
+                    print("error at line" + error_on_line+  " invalid syntax for given opcode of " + str(to_find)+ " type!!")
+                    error_counter = error_counter + 1
+
+
 
         elif(to_find== "mov"): #instruction-6,7
-            syntax_check = check_valid_reg_name(sub_line[2])
+            if (len(sub_line) == 4):
+                syntax_check = check_valid_reg_name(sub_line[2])
 
-            if (syntax_check):
+                if (syntax_check):
 
-                if (
+                    if (
 
-                        sub_line[3] == "R0" or sub_line[3] == "R1" or sub_line[3] == "R2" or sub_line[3] == "R3" or
-                        sub_line[3] == "R4" or sub_line[3] == "R5" or sub_line[3] == "R6" or sub_line[3] == "R7" or
-                        sub_line[3] == "FLAGS"):
+                            sub_line[3] == "R0" or sub_line[3] == "R1" or sub_line[3] == "R2" or sub_line[3] == "R3" or
+                            sub_line[3] == "R4" or sub_line[3] == "R5" or sub_line[3] == "R6" or sub_line[3] == "R7" or
+                            sub_line[3] == "FLAGS"):
 
-                    op_code_value = str(opcodes["mov_r"])
-                    line[i] = str(op_code_value) + "00000" + str(register[sub_line[2]]) + str(register[sub_line[3]])
+                        op_code_value = str(opcodes["mov_r"])
+                        line[i] = str(op_code_value) + "00000" + str(register[sub_line[2]]) + str(register[sub_line[3]])
 
-                elif ("$" in sub_line[3]):
-                    op_code_value = str(opcodes["mov"])
-                    remove_dollar = int(sub_line[3][1:len(sub_line[3])])  # omit the dollar sign
-                    if (check_illegal_immediate_value(remove_dollar)):
+                    elif ("$" in sub_line[3]):
+                        op_code_value = str(opcodes["mov"])
+                        remove_dollar = int(sub_line[3][1:len(sub_line[3])])  # omit the dollar sign
+                        if (check_illegal_immediate_value(remove_dollar)):
 
-                        # print("ggggg")
-                        # print(remove_dollar)
-                        bin_equi = length_adjuster(str(decimalToBinary(remove_dollar)))
 
-                        line[i] = str(op_code_value) + str(register[sub_line[2]]) + bin_equi
+                            bin_equi = length_adjuster(str(decimalToBinary(remove_dollar)))
+
+                            line[i] = str(op_code_value) + str(register[sub_line[2]]) + bin_equi
+                        else:
+                            error_on_line = str(find_line_number_2(str(sub_line[1] + sub_line[2] +sub_line[3]), lines) -1)
+                            print("error at line " + error_on_line+ " illegal immediate value used for register!")
+                            error_counter = error_counter + 1
+
                     else:
-                        error_on_line = str(find_line_number_2(str(sub_line[1] + sub_line[2] +sub_line[3]), lines) -1)
-                        print("error at line " + error_on_line+ " illegal immediate value used for register!")
+                        error_on_line = str(find_line_number_2(str(sub_line[1] + sub_line[2] + sub_line[3]), lines) - 1)
+                        print("error at line " + error_on_line+ " invalid register used")
                         error_counter = error_counter + 1
 
                 else:
                     error_on_line = str(find_line_number_2(str(sub_line[1] + sub_line[2] + sub_line[3]), lines) - 1)
-                    print("error at line " + error_on_line+ " invalid register used")
+                    print("error at line " + error_on_line+ " invalid register used at line!!")
                     error_counter = error_counter + 1
 
-            else:
-                error_on_line = str(find_line_number_2(str(sub_line[1] + sub_line[2] + sub_line[3]), lines) - 1)
-                print("error at line " + error_on_line+ " invalid register used at line!!")
-                error_counter = error_counter + 1
+
 
         elif(to_find == "ld"): #instruction-8
-            a = str(opcodes[to_find])  # opcode ka binary
+            if (len(sub_line) == 4):
+                a = str(opcodes[to_find])  # opcode ka binary
 
-            syntax_check = sub_line[2]!= "FLAGS" and check_valid_reg_name((sub_line[2])) and check_undefined_variables(sub_line[3])
-            if (syntax_check):
-                b = register[sub_line[2]]  # pass register value to get its binary
+                syntax_check = sub_line[2]!= "FLAGS" and check_valid_reg_name((sub_line[2])) and check_undefined_variables(sub_line[3])
 
-                c = length_adjuster(str(decimalToBinary(int(var_dict[sub_line[3]]))))
-                line[i] = a + b + c
-            else:
-                error_on_line = str(find_line_number_2(str(sub_line[1] + sub_line[2] + sub_line[3]), lines) - 1)
-                print("error at line " + error_on_line+ ". invalid register used or undefined variable input!!")
-                error_counter = error_counter + 1
+                if (syntax_check):
+                    b = register[sub_line[2]]  # pass register value to get its binary
+
+                    c = length_adjuster(str(decimalToBinary(int(var_dict[sub_line[3]]))))
+                    line[i] = a + b + c
+                else:
+
+                    error_on_line = str(find_line_number_2(str(sub_line[1] +" "+  sub_line[2] +" "+ sub_line[3]), lines) - 1)
+
+                    print("error at line " + error_on_line+ ". invalid register used or undefined variable input!!")
+                    error_counter = error_counter + 1
+
+
+
 
         elif (to_find == "st"): #instruction-9
-            a = str(opcodes[to_find])
-            syntax_check = sub_line[2]!= "FLAGS" and check_valid_reg_name((sub_line[2])) and check_undefined_variables(sub_line[3])
-            if (syntax_check):
-                b = register[sub_line[2]]
-                # print(sub_line[3])
-                c = length_adjuster(str(decimalToBinary(int(var_dict[sub_line[3]]))))
-                line[i] = a + b + c
-            else:
-                error_on_line = str(find_line_number_2(str(sub_line[1] + sub_line[2] + sub_line[3]), lines) - 1)
-                print("error at line " + error_on_line+ " invalid register used or undefined variable input!")
-                error_counter = error_counter + 1
+            if (len(sub_line) == 4):
+                a = str(opcodes[to_find])
+                syntax_check = sub_line[2]!= "FLAGS" and check_valid_reg_name((sub_line[2])) and check_undefined_variables(sub_line[3])
+                if (syntax_check):
+                    b = register[sub_line[2]]
+                    # print(sub_line[3])
+                    c = length_adjuster(str(decimalToBinary(int(var_dict[sub_line[3]]))))
+                    line[i] = a + b + c
+                else:
+                    error_on_line = str(find_line_number_2(str(sub_line[1] +" "+ sub_line[2] +" "+ sub_line[3]), lines) - 1)
+                    print("error at line " + error_on_line+ " invalid register used or undefined variable input!")
+                    error_counter = error_counter + 1
+
 
 
         elif (to_find == "div"): #instruction-10
-            a = str(opcodes[to_find])
-            b = "00000"
-            syntax_check = sub_line[2]!= "FLAGS" and check_valid_reg_name((sub_line[2])) and check_valid_reg_name((sub_line[3]))
-            if (syntax_check):
-                c = sub_line[2]
-                d = sub_line[3]
-                line[i] = a + b + c + d
-            else:
-                error_on_line = str(find_line_number_2(str(sub_line[1] + sub_line[2] + sub_line[3]), lines) - 1)
-                print("error at line " + error_on_line+ ". invalid register used!")
-                error_counter = error_counter + 1
+            if(len(sub_line)==4):
+                a = str(opcodes[to_find])
+                b = "00000"
+                syntax_check = sub_line[2]!= "FLAGS" and check_valid_reg_name((sub_line[2])) and check_valid_reg_name((sub_line[3]))
+                if (syntax_check):
+                    c = sub_line[2]
+                    d = sub_line[3]
+                    line[i] = a + b + c + d
+                else:
+                    error_on_line = str(find_line_number_2(str(sub_line[1] + " "+ sub_line[2] + " "+ sub_line[3]), lines) - 1)
+                    print("error at line " + error_on_line+ ". invalid register used!")
+                    error_counter = error_counter + 1
+
+
 
         elif (to_find == "rs"): #instruction-11
-            a = str(opcodes[to_find])
-            syntax_check = sub_line[2]!= "FLAGS" and check_valid_reg_name((sub_line[2]))
-            if (syntax_check):
-                b = register[sub_line[2]]
+            if (len(sub_line) == 4):
+                a = str(opcodes[to_find])
+                syntax_check = sub_line[2]!= "FLAGS" and check_valid_reg_name((sub_line[2]))
+                if (syntax_check):
+                    b = register[sub_line[2]]
 
-                remove_dollar = int(sub_line[3][1:len(sub_line[3])])  # omit the dollar sign
-                if (check_illegal_immediate_value(remove_dollar)):
-                    bin_equi = length_adjuster(str(decimalToBinary(remove_dollar)))
+                    remove_dollar = int(sub_line[3][1:len(sub_line[3])])  # omit the dollar sign
+                    if (check_illegal_immediate_value(remove_dollar)):
+                        bin_equi = length_adjuster(str(decimalToBinary(remove_dollar)))
 
-                    line[i] = a + b + bin_equi
+                        line[i] = a + b + bin_equi
+                    else:
+                        error_on_line = str(find_line_number_2(str(sub_line[1] +" "+ sub_line[2] +" "+ sub_line[3]), lines) - 1)
+                        print("error at line " + error_on_line + ". invalid immediate value used!!")
+
+                        error_counter = error_counter + 1
                 else:
-                    error_on_line = str(find_line_number_2(str(sub_line[1] + sub_line[2] + sub_line[3]), lines) - 1)
-                    print("error at line " + error_on_line + ". invalid immediate value used!!")
-
+                    error_on_line = str(find_line_number_2(str(sub_line[1] + " "+sub_line[2] + " "+sub_line[3]), lines) - 1)
+                    print("error at line " + error_on_line + ". invalid register used!")
                     error_counter = error_counter + 1
-            else:
-                error_on_line = str(find_line_number_2(str(sub_line[1] + sub_line[2] + sub_line[3]), lines) - 1)
-                print("error at line " + error_on_line + ". invalid register used!")
-                error_counter = error_counter + 1
+
+
 
         elif (to_find == "ls"): #instruction-12
-            a = str(opcodes[to_find])
-            syntax_check = sub_line[2]!= "FLAGS" and check_valid_reg_name((sub_line[2]))
-            if (syntax_check):
+            if (len(sub_line) == 4):
+                a = str(opcodes[to_find])
+                syntax_check = sub_line[2]!= "FLAGS" and check_valid_reg_name((sub_line[2]))
+                if (syntax_check):
 
-                b = register[sub_line[2]]
+                    b = register[sub_line[2]]
 
-                remove_dollar = int(sub_line[3][1:len(sub_line[3])])  # omit the dollar sign
-                if (check_illegal_immediate_value(remove_dollar)):
-                    bin_equi = length_adjuster(str(decimalToBinary(remove_dollar)))
+                    remove_dollar = int(sub_line[3][1:len(sub_line[3])])  # omit the dollar sign
+                    if (check_illegal_immediate_value(remove_dollar)):
+                        bin_equi = length_adjuster(str(decimalToBinary(remove_dollar)))
 
-                    line[i] = a + b + bin_equi
+                        line[i] = a + b + bin_equi
+                    else:
+                        error_on_line = str(find_line_number_2(str(sub_line[1] +" "+ sub_line[2] +" "+ sub_line[3]), lines) - 1)
+                        print("error at line " + error_on_line + ". invalid immediate value used!!")
+                        error_counter = error_counter + 1
+
                 else:
-                    error_on_line = str(find_line_number_2(str(sub_line[1] + sub_line[2] + sub_line[3]), lines) - 1)
-                    print("error at line " + error_on_line + ". invalid immediate value used!!")
+                    error_on_line = str(find_line_number_2(str(sub_line[1] +" "+ sub_line[2] +" "+ sub_line[3]), lines) - 1)
+                    print("error at line " + error_on_line +". invalid register used!")
                     error_counter = error_counter + 1
 
-            else:
-                error_on_line = str(find_line_number_2(str(sub_line[1] + sub_line[2] + sub_line[3]), lines) - 1)
-                print("error at line " + error_on_line +". invalid register used!")
-                error_counter = error_counter + 1
 
 
         elif (to_find == "not"): #instruction-13
-            syntax_check = sub_line[2]!= "FLAGS" and sub_line[3]!= "FLAGS" and check_valid_reg_name((sub_line[2])) and check_valid_reg_name((sub_line[3]))
-            if (syntax_check):
+            if (len(sub_line) == 4):
+                syntax_check = sub_line[2]!= "FLAGS" and sub_line[3]!= "FLAGS" and check_valid_reg_name((sub_line[2])) and check_valid_reg_name((sub_line[3]))
+                if (syntax_check):
 
-                a = str(opcodes[to_find])
-                b = "00000"
-                c = register[sub_line[2]]
-                d = register[sub_line[3]]
-                line[i] = a + b + c + d
+                    a = str(opcodes[to_find])
+                    b = "00000"
+                    c = register[sub_line[2]]
+                    d = register[sub_line[3]]
+                    line[i] = a + b + c + d
 
-            else:
-                error_on_line = str(find_line_number_2(str(sub_line[1] + sub_line[2] + sub_line[3]), lines) - 1)
-                print("error at line " + error_on_line + ". invalid register used!")
-                error_counter = error_counter + 1
+                else:
+                    error_on_line = str(find_line_number_2(str(sub_line[1] +" "+ sub_line[2] +" "+ sub_line[3]), lines) - 1)
+                    print("error at line " + error_on_line + ". invalid register used!")
+                    error_counter = error_counter + 1
+
 
         elif (to_find == "cmp"): #instruction-14
-            syntax_check = sub_line[2]!= "FLAGS" and sub_line[3]!= "FLAGS" and check_valid_reg_name((sub_line[2])) and check_valid_reg_name((sub_line[3]))
-            if (syntax_check):
-                a = str(opcodes[to_find])
-                b = "00000"
-                c = register[sub_line[2]]
-                d = register[sub_line[3]]
-                line[i] = a + b + c + d
-
-            else:
-                error_on_line = str(find_line_number_2(str(sub_line[1] + sub_line[2] + sub_line[3]), lines) - 1)
-                print("error at line " + error_on_line + "invalid register used!")
-                error_counter = error_counter + 1
-        #else:
-            #print("2 invalid syntax for given opcode!!")
-
-        elif(to_find == "add"): #instruction-15
-                syntax_check = check_valid_reg_name((sub_line[2])) and check_valid_reg_name((sub_line[3])) and check_valid_reg_name((sub_line[4]))
+            if (len(sub_line) == 4):
+                syntax_check = sub_line[2]!= "FLAGS" and sub_line[3]!= "FLAGS" and check_valid_reg_name((sub_line[2])) and check_valid_reg_name((sub_line[3]))
                 if (syntax_check):
                     a = str(opcodes[to_find])
-                    b="00"
-                    c=register[sub_line[2]]
-                    d=register[sub_line[3]]
-                    e=register[sub_line[4]]
-                    line[i] = a + b + c + d + e
+                    b = "00000"
+                    c = register[sub_line[2]]
+                    d = register[sub_line[3]]
+                    line[i] = a + b + c + d
+
                 else:
-                    error_on_line = str(find_line_number_2(str(sub_line[1] + sub_line[2] + sub_line[3]+ sub_line[4]), lines) - 1)
+                    error_on_line = str(find_line_number_2(str(sub_line[1] + " "+sub_line[2] +" "+ sub_line[3]), lines) - 1)
                     print("error at line " + error_on_line + "invalid register used!")
                     error_counter = error_counter + 1
 
-        elif (to_find == "sub"): #instruction-16
-            syntax_check = check_valid_reg_name((sub_line[2])) and check_valid_reg_name(
-                (sub_line[3])) and check_valid_reg_name((sub_line[4]))
-            if (syntax_check):
-                a = str(opcodes[to_find])
-                b = "00"
-                c = register[sub_line[2]]
-                d = register[sub_line[3]]
-                e = register[sub_line[4]]
-                line[i] = a + b + c + d + e
-            else:
-                error_on_line = str(find_line_number_2(str(sub_line[1] + sub_line[2] + sub_line[3] + sub_line[4]), lines) - 1)
-                print("error at line " + error_on_line + "invalid register used!")
 
-                error_counter = error_counter + 1
+
+
+        elif(to_find == "add"): #instruction-15
+            if (len(sub_line) == 5):
+                    syntax_check = check_valid_reg_name((sub_line[2])) and check_valid_reg_name((sub_line[3])) and check_valid_reg_name((sub_line[4]))
+                    if (syntax_check):
+                        a = str(opcodes[to_find])
+                        b="00"
+                        c=register[sub_line[2]]
+                        d=register[sub_line[3]]
+                        e=register[sub_line[4]]
+                        line[i] = a + b + c + d + e
+
+                    else:
+
+                            error_on_line = str(find_line_number_2(str(sub_line[1] +" "+ sub_line[2] + " "+sub_line[3]+ sub_line[4]), lines) - 1)
+                            print("error at line " + error_on_line + "invalid register used!")
+                            error_counter = error_counter + 1
+
+
+        elif (to_find == "sub"): #instruction-16
+            if (len(sub_line) == 5):
+                syntax_check = check_valid_reg_name((sub_line[2])) and check_valid_reg_name(
+                    (sub_line[3])) and check_valid_reg_name((sub_line[4]))
+                if (syntax_check):
+                    a = str(opcodes[to_find])
+                    b = "00"
+                    c = register[sub_line[2]]
+                    d = register[sub_line[3]]
+                    e = register[sub_line[4]]
+                    line[i] = a + b + c + d + e
+                else:
+
+                        error_on_line = str(find_line_number_2(str(sub_line[1] +" "+ sub_line[2] +" "+ sub_line[3] +" "+ sub_line[4]), lines) - 1)
+                        print("error at line " + error_on_line + "invalid register used!")
+
+                        error_counter = error_counter + 1
+
 
 
 
 
         elif (to_find == "mul"): #instruction-17
-            syntax_check = check_valid_reg_name((sub_line[2])) and check_valid_reg_name(
-                (sub_line[3])) and check_valid_reg_name((sub_line[4]))
-            if (syntax_check):
-                a = str(opcodes[to_find])
-                b = "00"
-                c = register[sub_line[2]]
-                d = register[sub_line[3]]
-                e = register[sub_line[4]]
-                line[i] = a + b + c + d + e
-            else:
+            if (len(sub_line) == 5):
+                syntax_check = check_valid_reg_name((sub_line[2])) and check_valid_reg_name(
+                    (sub_line[3])) and check_valid_reg_name((sub_line[4]))
+                if (syntax_check):
+                    a = str(opcodes[to_find])
+                    b = "00"
+                    c = register[sub_line[2]]
+                    d = register[sub_line[3]]
+                    e = register[sub_line[4]]
+                    line[i] = a + b + c + d + e
+                else:
 
-                error_on_line = str(find_line_number_2(str(sub_line[1] + sub_line[2] + sub_line[3] + sub_line[4]), lines) - 1)
-                print("error at line " + error_on_line + "invalid register used!")
-                error_counter = error_counter + 1
+                    if (len(sub_line) == 5):
+                        error_on_line = str(find_line_number_2(str(sub_line[1] +" "+ sub_line[2] +" "+ sub_line[3] +" "+ sub_line[4]), lines) - 1)
+                        print("error at line " + error_on_line + "invalid register used!")
+                        error_counter = error_counter + 1
+
 
 
 
         elif (to_find == "xor"): #instruction-18
-            syntax_check = check_valid_reg_name((sub_line[2])) and check_valid_reg_name(
-                (sub_line[3])) and check_valid_reg_name((sub_line[4]))
-            if (syntax_check):
-                a = str(opcodes[to_find])
-                b = "00"
-                c = register[sub_line[2]]
-                d = register[sub_line[3]]
-                e = register[sub_line[4]]
-                line[i] = a + b + c + d + e
-            else:
+            if (len(sub_line) == 5):
+                syntax_check = check_valid_reg_name((sub_line[2])) and check_valid_reg_name(
+                    (sub_line[3])) and check_valid_reg_name((sub_line[4]))
+                if (syntax_check):
+                    a = str(opcodes[to_find])
+                    b = "00"
+                    c = register[sub_line[2]]
+                    d = register[sub_line[3]]
+                    e = register[sub_line[4]]
+                    line[i] = a + b + c + d + e
 
-                error_on_line = str(find_line_number_2(str(sub_line[1] + sub_line[2] + sub_line[3] + sub_line[4]), lines) - 1)
-                print("error at line " + error_on_line + "invalid register used!")
-                error_counter = error_counter + 1
+                else:
+                    if (len(sub_line) == 5):
+                        error_on_line = str(find_line_number_2(str(sub_line[1] + " "+sub_line[2] +" "+ sub_line[3] +" "+ sub_line[4]), lines) - 1)
+                        print("error at line " + error_on_line + "invalid register used!")
+                        error_counter = error_counter + 1
+
+
 
 
         elif (to_find == "or"): #instruction-19
-            syntax_check = check_valid_reg_name((sub_line[2])) and check_valid_reg_name(
-                (sub_line[3])) and check_valid_reg_name((sub_line[4]))
-            if (syntax_check):
-                a = str(opcodes[to_find])
-                b = "00"
-                c = register[sub_line[2]]
-                d = register[sub_line[3]]
-                e = register[sub_line[4]]
-                line[i] = a + b + c + d + e
-            else:
-                error_on_line = str(find_line_number_2(str(sub_line[1] + sub_line[2] + sub_line[3] + sub_line[4]), lines) - 1)
-                print("error at line " + error_on_line + "invalid register used!")
+            if (len(sub_line) == 5):
+                syntax_check = check_valid_reg_name((sub_line[2])) and check_valid_reg_name(
+                    (sub_line[3])) and check_valid_reg_name((sub_line[4]))
+                if (syntax_check):
+                    a = str(opcodes[to_find])
+                    b = "00"
+                    c = register[sub_line[2]]
+                    d = register[sub_line[3]]
+                    e = register[sub_line[4]]
+                    line[i] = a + b + c + d + e
+                else:
 
-                error_counter = error_counter + 1
+                        error_on_line = str(find_line_number_2(str(sub_line[1] + " "+sub_line[2] + " "+sub_line[3] +" "+ sub_line[4]), lines) - 1)
+                        print("error at line " + error_on_line + "invalid register used!")
+
 
 
         elif (to_find == "and"): #instruction-20
-            syntax_check = check_valid_reg_name((sub_line[2])) and check_valid_reg_name(
-                (sub_line[3])) and check_valid_reg_name((sub_line[4]))
-            if (syntax_check):
-                a = str(opcodes[to_find])
-                b = "00"
-                c = register[sub_line[2]]
-                d = register[sub_line[3]]
-                e = register[sub_line[4]]
-                line[i] = a + b + c + d + e
-            else:
+            if (len(sub_line) == 5):
+                syntax_check = check_valid_reg_name((sub_line[2])) and check_valid_reg_name(
+                    (sub_line[3])) and check_valid_reg_name((sub_line[4]))
+                if (syntax_check):
+                    a = str(opcodes[to_find])
+                    b = "00"
+                    c = register[sub_line[2]]
+                    d = register[sub_line[3]]
+                    e = register[sub_line[4]]
+                    line[i] = a + b + c + d + e
+                else:
+                    if (len(sub_line) == 5):
+                        error_on_line = str(find_line_number_2(str(sub_line[1] +" "+ sub_line[2] + " "+sub_line[3] +" "+ sub_line[4]), lines) - 1)
+                        print("error at line " + error_on_line + "invalid register used!")
 
-                error_on_line = str(find_line_number_2(str(sub_line[1] + sub_line[2] + sub_line[3] + sub_line[4]), lines) - 1)
-                print("error at line " + error_on_line + "invalid register used!")
-                error_counter = error_counter + 1
 
-        elif(to_find in label_dict.keys()):
+        elif(to_find in label_dict.keys()): # this check if instruction after label is valid or not
             instruction= sub_line[2]
-            if(instruction in opcodes.keys()): # this check if instruction after label is valid or not
 
-                op_code_value=opcodes[instruction]
+            op_code_value=opcodes[instruction]
 
-                if(len(sub_line)==3):
-                    # this instruction is halt
-                    line[i] = "1001100000000000"
+            if(len(sub_line)==3):
+                    if(instruction=="hlt"):
+                        # this instruction is halt
+                        line[i] = "1001100000000000"
 
-                elif (len(sub_line) == 4):
+
+
+            elif (len(sub_line) == 4):
                     # this is either of the jump instructions
-                    line[i] = str(op_code_value) + "000" + length_adjuster(str(decimalToBinary(int(label_dict[sub_line[3]]))))
+                    if (instruction == "jmp" or instruction == "jlt" or instruction == "jgt" or instruction == "je" ):
+                        line[i] = str(op_code_value) + "000" + length_adjuster(str(decimalToBinary(int(label_dict[sub_line[3]]))))
 
-                elif(len(sub_line) == 5):
+
+            elif(len(sub_line) == 5):
                     # move instruction, load, store, div, rs, ls, not, cmp,
                     if (instruction == "mov"):
                         syntax_check = check_valid_reg_name(sub_line[3])
@@ -591,20 +710,23 @@ if(error_counter==0):
 
                                     line[i] = str(op_code_value) + str(register[sub_line[3]]) + bin_equi
                                 else:
-                                    error_on_line = str(find_line_number_2(str(sub_line[2] + sub_line[3] + sub_line[4]),
+                                    error_on_line = str(find_line_number_2(sub_line[1] +": "+str(sub_line[2] + " "+sub_line[3] +" "+ sub_line[4]),
                                                            lines) - 1)
 
-                                    print("error at line " + error_on_line + "invalid register used!")
+                                    print("error at line " + error_on_line + "illegal immediate value used for register!")
                                     error_counter = error_counter + 1
                             else:
                                 #print(line[i])
-                                error_on_line = str(find_line_number_2(str(sub_line[2] + sub_line[3] + sub_line[4]), lines) - 1)
+                                error_on_line = str(find_line_number_2(sub_line[1] +": "+ str(sub_line[2] +" "+ sub_line[3] + " "+sub_line[4]), lines) - 1)
                                 print("error at line " + error_on_line + " invalid register used")
 
                                 error_counter = error_counter + 1
 
                         else:
-                            error_on_line = str(find_line_number_2(str(sub_line[2] + sub_line[3] + sub_line[4]), lines) - 1)
+                            #a=(sub_line[1] +": "+sub_line[2] +" "+ sub_line[3] +" "+ sub_line[4])
+                            #print(a.split())
+
+                            error_on_line = str(find_line_number_2(str(sub_line[1] +": "+sub_line[2] +" "+ sub_line[3] +" "+ sub_line[4]), lines))
                             print("error at line " + error_on_line + " invalid register used at line!!")
 
                             error_counter = error_counter + 1
@@ -619,7 +741,7 @@ if(error_counter==0):
                             c = length_adjuster(str(decimalToBinary(int(var_dict[sub_line[3]]))))
                             line[i] = a + b + c
                         else:
-                            error_on_line = str(find_line_number_2(str(sub_line[2] + sub_line[3] + sub_line[4]), lines) - 1)
+                            error_on_line = str(find_line_number_2(str(sub_line[1] +": "+sub_line[2] +" "+ sub_line[3] + " "+sub_line[4]), lines) - 1)
                             print("error at line " + error_on_line + ". invalid register used or undefined variable input!!")
 
                             error_counter = error_counter + 1
@@ -633,7 +755,7 @@ if(error_counter==0):
                             c = length_adjuster(str(decimalToBinary(int(var_dict[sub_line[4]]))))
                             line[i] = a + b + c
                         else:
-                            error_on_line = str(find_line_number_2(str(sub_line[2] + sub_line[3] + sub_line[4]), lines) - 1)
+                            error_on_line = str(find_line_number_2(str(sub_line[1] +": "+ sub_line[2] +" "+ sub_line[3] +" "+ sub_line[4]), lines) - 1)
                             print("error at line " + error_on_line + " invalid register used or undefined variable input!")
 
                             error_counter = error_counter + 1
@@ -647,7 +769,7 @@ if(error_counter==0):
                             d = sub_line[4]
                             line[i] = a + b + c + d
                         else:
-                            error_on_line = str(find_line_number_2(str(sub_line[2] + sub_line[3] + sub_line[4]), lines) - 1)
+                            error_on_line = str(find_line_number_2(str(sub_line[1] +": "+ sub_line[2] +" "+ sub_line[3] +" "+ sub_line[4]), lines) - 1)
                             print("error at line " + error_on_line + ". invalid register used!")
 
                             error_counter = error_counter + 1
@@ -664,12 +786,12 @@ if(error_counter==0):
 
                                 line[i] = a + b + bin_equi
                             else:
-                                error_on_line = str(find_line_number_2(str(sub_line[2] + sub_line[3] + sub_line[4]), lines) - 1)
+                                error_on_line = str(find_line_number_2(str(sub_line[1] +": "+ sub_line[2] +" "+ sub_line[3] + " "+sub_line[4]), lines) - 1)
                                 print("error at line " + error_on_line + ". invalid immediate value used!!")
 
                                 error_counter = error_counter + 1
                         else:
-                            error_on_line = str(find_line_number_2(str(sub_line[2] + sub_line[3] + sub_line[4]), lines) - 1)
+                            error_on_line = str(find_line_number_2(str(sub_line[1] +": "+ sub_line[2] +" "+ sub_line[3] +" "+ sub_line[4]), lines) - 1)
                             print("error at line " + error_on_line + ". invalid register used!")
 
                             error_counter = error_counter + 1
@@ -687,13 +809,13 @@ if(error_counter==0):
 
                                 line[i] = a + b + bin_equi
                             else:
-                                error_on_line = str(find_line_number_2(str(sub_line[2] + sub_line[3] + sub_line[4]), lines) - 1)
+                                error_on_line = str(find_line_number_2(str(sub_line[1] +": "+ sub_line[2] +" "+ sub_line[3] +" "+ sub_line[4]), lines) - 1)
                                 print("error at line " + error_on_line + ". invalid immediate value used!!")
 
                                 error_counter = error_counter + 1
 
                         else:
-                            error_on_line = str(find_line_number_2(str(sub_line[2] + sub_line[3] + sub_line[4]), lines) - 1)
+                            error_on_line = str(find_line_number_2(str(sub_line[1] +": "+ sub_line[2] + " "+sub_line[3] +" "+ sub_line[4]), lines) - 1)
                             print("error at line " + error_on_line + ". invalid register used!")
 
                             error_counter = error_counter + 1
@@ -709,7 +831,7 @@ if(error_counter==0):
                             line[i] = a + b + c + d
 
                         else:
-                            error_on_line = str(find_line_number_2(str(sub_line[2] + sub_line[3] + sub_line[4]), lines) - 1)
+                            error_on_line = str(find_line_number_2(str(sub_line[1] +": "+ sub_line[2] +" "+ sub_line[3] +" "+ sub_line[4]), lines) - 1)
                             print("error at line " + error_on_line + ". invalid register used!")
 
                             error_counter = error_counter + 1
@@ -724,12 +846,15 @@ if(error_counter==0):
                             line[i] = a + b + c + d
 
                         else:
-                            error_on_line = str(find_line_number_2(str(sub_line[2] + sub_line[3] + sub_line[4]), lines) - 1)
+                            error_on_line = str(find_line_number_2(str(sub_line[1] +": "+ sub_line[2] +" "+ sub_line[3] + " "+sub_line[4]), lines) - 1)
                             print("error at line " + error_on_line + "invalid register used!")
 
                             error_counter = error_counter + 1
+                    else:
+                        print("invalid syntax given for instruction"+ instruction)
+                        error_counter=error_counter+1
 
-                elif(len(sub_line)==6):
+            elif(len(sub_line)==6):
                     if (instruction == "add"):
                         syntax_check = check_valid_reg_name((sub_line[3])) and check_valid_reg_name(
                             (sub_line[4])) and check_valid_reg_name((sub_line[5]))
@@ -741,7 +866,7 @@ if(error_counter==0):
                             e = register[sub_line[5]]
                             line[i] = a + b + c + d + e
                         else:
-                            error_on_line = str(find_line_number_2(str(sub_line[2] + sub_line[3] + sub_line[4] + sub_line[5]),
+                            error_on_line = str(find_line_number_2(str(sub_line[1] +": "+ sub_line[2] + " "+sub_line[3] +" "+ sub_line[4] + " "+sub_line[5]),
                                                    lines) - 1)
                             print("error at line " + error_on_line + "invalid register used!")
 
@@ -760,7 +885,7 @@ if(error_counter==0):
                             e = register[sub_line[5]]
                             line[i] = a + b + c + d + e
                         else:
-                            error_on_line = str(find_line_number_2(str(sub_line[2] + sub_line[3] + sub_line[4] + sub_line[5]),
+                            error_on_line = str(find_line_number_2(str(sub_line[1] +": "+ sub_line[2] +" "+ sub_line[3] +" "+ sub_line[4] +" "+ sub_line[5]),
                                                    lines) - 1)
                             print("error at line " + error_on_line + "invalid register used!")
 
@@ -781,7 +906,7 @@ if(error_counter==0):
                             line[i] = a + b + c + d + e
                         else:
                             error_on_line = str(
-                                find_line_number_2(str(sub_line[2] + sub_line[3] + sub_line[4] + sub_line[5]),
+                                find_line_number_2(str(sub_line[1] +": "+ sub_line[2] +" "+ sub_line[3] +" "+ sub_line[4] +" "+ sub_line[5]),
                                                    lines) - 1)
                             print("error at line " + error_on_line + "invalid register used!")
 
@@ -801,7 +926,7 @@ if(error_counter==0):
                             line[i] = a + b + c + d + e
                         else:
                             error_on_line = str(
-                                find_line_number_2(str(sub_line[2] + sub_line[3] + sub_line[4] + sub_line[5]),
+                                find_line_number_2(str(sub_line[1] +": "+ sub_line[2] +" "+ sub_line[3] +" "+ sub_line[4] +" "+ sub_line[5]),
                                                    lines) - 1)
                             print("error at line " + error_on_line + "invalid register used!")
 
@@ -820,7 +945,7 @@ if(error_counter==0):
                             line[i] = a + b + c + d + e
                         else:
                             error_on_line = str(
-                                find_line_number_2(str(sub_line[1] + sub_line[2] + sub_line[3] + sub_line[4]),
+                                find_line_number_2(str(sub_line[1] +": "+ sub_line[2] +" "+ sub_line[3] +" "+ sub_line[4]),
                                                    lines) - 1)
                             print("error at line " + error_on_line + "invalid register used!")
 
@@ -839,11 +964,16 @@ if(error_counter==0):
                             line[i] = a + b + c + d + e
                         else:
                             error_on_line = str(
-                                find_line_number_2(str(sub_line[1] + sub_line[2] + sub_line[3] + sub_line[4]),
+                                find_line_number_2(str(sub_line[1] +": "+ sub_line[2] +" "+ sub_line[3] +" "+ sub_line[4]),
                                                    lines) - 1)
                             print("error at line " + error_on_line + "invalid register used!")
 
                             error_counter = error_counter + 1
+                    else:
+                        print("invalid syntax given for instruction " + instruction)
+                        error_counter=error_counter+1
+
+
 
 if(error_counter==0):
     for i in range(len(line)):
