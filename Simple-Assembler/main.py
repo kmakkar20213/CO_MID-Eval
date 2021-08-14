@@ -33,6 +33,9 @@ def check_if_hlt_last(line):
         g=line[i].split()
 
         if(g[1]== "hlt" or (len(g)>2 and g[2]=="hlt" ) ):
+            if(i==len(line)-1): #there was no variable, only instructions and hlt
+                return True
+
             index= g[0]
             break
 
@@ -363,7 +366,7 @@ if(error_counter==0):
                     line[i] = str(op_code_value) + "000" + length_adjuster(str(decimalToBinary(int(label_dict[sub_line[2]]))))
                 elif (to_find != "var"):
                     error_on_line= str(find_line_number_2(str(sub_line[1]+" "+ sub_line[2]), lines))
-                    print("error at line" + error_on_line+  " invalid syntax for given opcode of " + str(to_find)+ " type!!")
+                    print("error at line" + error_on_line+  "." + sub_line[2]+ " has not been defined as a label. ")
                     error_counter = error_counter + 1
 
 
@@ -422,10 +425,16 @@ if(error_counter==0):
                     line[i] = a + b + c
                 else:
 
-                    error_on_line = str(find_line_number_2(str(sub_line[1] +" "+  sub_line[2] +" "+ sub_line[3]), lines) - 1)
+                    error_on_line = str(find_line_number_2(str(sub_line[1] +" "+  sub_line[2] +" "+ sub_line[3]), lines))
+                    if(not check_valid_reg_name((sub_line[2]))):
+                        print("error at line " + error_on_line+ ". invalid register used")
+                        error_counter = error_counter + 1
 
-                    print("error at line " + error_on_line+ ". invalid register used or undefined variable input!!")
-                    error_counter = error_counter + 1
+                    elif(not check_undefined_variables(sub_line[3])):
+                        print("error at line " + error_on_line + " variable used has not been defined!")
+                        error_counter = error_counter + 1
+
+
 
 
 
@@ -440,9 +449,15 @@ if(error_counter==0):
                     c = length_adjuster(str(decimalToBinary(int(var_dict[sub_line[3]]))))
                     line[i] = a + b + c
                 else:
-                    error_on_line = str(find_line_number_2(str(sub_line[1] +" "+ sub_line[2] +" "+ sub_line[3]), lines) - 1)
-                    print("error at line " + error_on_line+ " invalid register used or undefined variable input!")
-                    error_counter = error_counter + 1
+                    error_on_line = str(find_line_number_2(str(sub_line[1] +" "+ sub_line[2] +" "+ sub_line[3]), lines))
+                    if (not check_valid_reg_name((sub_line[2]))):
+                        print("error at line " + error_on_line + ". invalid register used")
+                        error_counter = error_counter + 1
+
+                    elif (not check_undefined_variables(sub_line[3])):
+                        print("error at line " + error_on_line + " variable used has not been defined!")
+                        error_counter = error_counter + 1
+
 
 
 
