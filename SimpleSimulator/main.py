@@ -153,10 +153,14 @@ def run(PC , lines):
         typeD(op, code[5:8] , code[8:])
 
     if this == "E":
+        print(to8(PC) , to16(register["000"]) , to16(register["001"]) , to16(register["010"]) , to16(register["011"]) ,
+              to16(register["100"]) , to16(register["101"]) , to16(register["110"]) , to16(register["111"]))
         typeE(op,code[8:],PC+1)
 
 
+
     if this == "F":
+        register["111"] = "0000000000000000"
         print(to8(PC), to16(register["000"]), to16(register["001"]), to16(register["010"]), to16(register["011"]),
               to16(register["100"]), to16(register["101"]), to16(register["110"]), to16(register["111"]))
         return
