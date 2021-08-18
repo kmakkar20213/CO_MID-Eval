@@ -111,7 +111,6 @@ def typeE(op,address,pc):
 
     else :
         run(pc , lines)
-    register["111"] = "0000000000000000"
 
 def to16(s):
     new = "0"*(16-len(s)) + s
@@ -154,7 +153,7 @@ def run(PC , lines):
 
     if this == "E":
         print(to8(PC) , to16(register["000"]) , to16(register["001"]) , to16(register["010"]) , to16(register["011"]) ,
-              to16(register["100"]) , to16(register["101"]) , to16(register["110"]) , to16(register["111"]))
+              to16(register["100"]) , to16(register["101"]) , to16(register["110"]) , '0000000000000000')
         typeE(op,code[8:],PC+1)
 
 
