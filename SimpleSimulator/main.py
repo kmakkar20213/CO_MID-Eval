@@ -15,16 +15,16 @@ def typeA(op , reg1 , reg2 , reg3):
             register[reg1] = bin(int(register[reg2] , 2) + int(register[reg3],2))[2:]
             register["111"] = "0000000000000000"
         else:
-            register[reg1] = "0000000000000000"
+            register[reg1] = bin(int(register[reg2] , 2) + int(register[reg3],2))[-16:]
             register["111"] = "0000000000001000"
 
     if op == "00001":
-        if int(register[reg2], 2) + int(register[reg3], 2) >= 0:
+        if int(register[reg2], 2) - int(register[reg3], 2) >= 0:
             register[reg1] = bin(int(register[reg2], 2) - int(register[reg3], 2))[2:]
             register["111"] = "0000000000000000"
 
         else:
-            register[reg1] = bin(int(register[reg2], 2) + int(register[reg3], 2))[-16:]
+            register[reg1] = "0000000000000000"
             register["111"] = "0000000000001000"
 
     if op == "00110":
