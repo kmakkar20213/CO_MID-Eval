@@ -1,4 +1,4 @@
-import sys
+
 opcodes= {
  "add":"00000" ,  "sub":"00001" , "mov":"00010", "mov_r": "00011", "ld": "00100" , "st": "00101", "mul": "00110",
  "div": "00111",  "rs":"01000", "ls": "01001", "xor":"01010", "or": "01011", "and": "01100", "not":"01101",
@@ -21,13 +21,11 @@ instruction_length ={ "add":"4" ,  "sub":"4" , "mov":"3", "mov_r": "3", "ld": "3
 def decimalToBinary(n):
     return "{0:b}".format(int(n))
 
- 
 def length_adjuster(s):
     if(len(s)<8):
         c= 8- len(s)
         return "0"*c + s
 
-    
 def check_if_hlt_last(line):
     index=-1
 
@@ -190,12 +188,9 @@ def check_arguments_after_instruction(lines):
 
 
 error_counter=0
-'''f= open(r"input.txt")'''
-complete_input = sys.stdin.read()
+f= open(r"C:\Users\Bhan\Desktop\demo.txt")
 
-lines=(complete_input.split("\n"))
-
-'''lines=[]
+lines=[]
 while True:
     x= f.readline()  # this returns the each line that ends with /n , basically used to separate commands
 
@@ -203,7 +198,7 @@ while True:
         break
     lines.append(x.strip()) #store in a list the new lines, using strip to remove extra white spaces if any
 f.close()
-'''
+
 line=[]
 c=0
 
@@ -384,8 +379,7 @@ if(error_counter==0):
                     if (
 
                             sub_line[3] == "R0" or sub_line[3] == "R1" or sub_line[3] == "R2" or sub_line[3] == "R3" or
-                            sub_line[3] == "R4" or sub_line[3] == "R5" or sub_line[3] == "R6" or sub_line[3] == "R7" or
-                            sub_line[3] == "FLAGS"):
+                            sub_line[3] == "R4" or sub_line[3] == "R5" or sub_line[3] == "R6" or sub_line[3] == "FLAGS" ):
 
                         op_code_value = str(opcodes["mov_r"])
                         line[i] = str(op_code_value) + "00000" + str(register[sub_line[2]]) + str(register[sub_line[3]])
@@ -711,8 +705,8 @@ if(error_counter==0):
 
                                  sub_line[4] == "R0" or sub_line[4] == "R1" or sub_line[4] == "R2" or sub_line[
                                 4] == "R3" or
-                                    sub_line[4] == "R4" or sub_line[4] == "R5" or sub_line[4] == "R6" or sub_line[
-                                4] == "R7" or sub_line[4] == "FLAGS"):
+                                    sub_line[4] == "R4" or sub_line[4] == "R5" or sub_line[4] == "R6" or
+                                 sub_line[4] == "FLAGS"):
 
                                 op_code_value = str(opcodes["mov_r"])
                                 line[i] = str(op_code_value) + "00000" + str(register[sub_line[3]]) + str(
@@ -793,7 +787,7 @@ if(error_counter==0):
 
                             error_counter = error_counter + 1
 
-                    elif (to_find == "rs"):
+                    elif (instruction == "rs"):
                         a = str(opcodes[instruction])
                         syntax_check = check_valid_reg_name((sub_line[3]))
                         if (syntax_check):
@@ -815,7 +809,7 @@ if(error_counter==0):
 
                             error_counter = error_counter + 1
 
-                    elif (to_find == "ls"):
+                    elif (instruction == "ls"):
                         a = str(opcodes[instruction])
                         syntax_check = check_valid_reg_name((sub_line[3]))
                         if (syntax_check):
@@ -839,7 +833,7 @@ if(error_counter==0):
 
                             error_counter = error_counter + 1
 
-                    elif (to_find == "not"):
+                    elif (instruction == "not"):
                         syntax_check = check_valid_reg_name((sub_line[3])) and check_valid_reg_name((sub_line[4]))
                         if (syntax_check):
 
@@ -855,7 +849,7 @@ if(error_counter==0):
 
                             error_counter = error_counter + 1
 
-                    elif (to_find == "cmp"):
+                    elif (instruction == "cmp"):
                         syntax_check = check_valid_reg_name((sub_line[3])) and check_valid_reg_name((sub_line[4]))
                         if (syntax_check):
                             a = str(opcodes[instruction])
@@ -913,7 +907,7 @@ if(error_counter==0):
 
 
 
-                    elif (to_find == "mul"):
+                    elif (instruction == "mul"):
                         syntax_check = check_valid_reg_name((sub_line[3])) and check_valid_reg_name(
                             (sub_line[4])) and check_valid_reg_name((sub_line[5]))
                         if (syntax_check):
@@ -933,7 +927,7 @@ if(error_counter==0):
 
 
 
-                    elif (to_find == "xor"):
+                    elif (instruction == "xor"):
                         syntax_check = check_valid_reg_name((sub_line[3])) and check_valid_reg_name(
                             (sub_line[4])) and check_valid_reg_name((sub_line[5]))
                         if (syntax_check):
@@ -952,7 +946,7 @@ if(error_counter==0):
                             error_counter = error_counter + 1
 
 
-                    elif (to_find == "or"):
+                    elif (instruction== "or"):
                         syntax_check = check_valid_reg_name((sub_line[3])) and check_valid_reg_name(
                             (sub_line[4])) and check_valid_reg_name((sub_line[5]))
                         if (syntax_check):
@@ -971,7 +965,7 @@ if(error_counter==0):
                             error_counter = error_counter + 1
 
 
-                    elif (to_find == "and"):
+                    elif (instruction== "and"):
                         syntax_check = check_valid_reg_name((sub_line[3])) and check_valid_reg_name(
                             (sub_line[4])) and check_valid_reg_name((sub_line[5]))
                         if (syntax_check):
