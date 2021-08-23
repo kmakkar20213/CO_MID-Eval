@@ -24,7 +24,7 @@ def typeA(op , reg1 , reg2 , reg3):
             register["111"] = "0000000000000000"
 
         else:
-            register[reg1] = "0000000000000000"
+            register[reg1] = bin(int(register[reg2], 2) + int(register[reg3], 2))[-16:]
             register["111"] = "0000000000001000"
 
     if op == "00110":
@@ -32,7 +32,7 @@ def typeA(op , reg1 , reg2 , reg3):
             register[reg1] = bin(int(register[reg2], 2) * int(register[reg3], 2))[2:]
             register["111"] = "0000000000000000"
         else:
-            register[reg1] = "0000000000000000"
+            register[reg1] = bin(int(register[reg2], 2) * int(register[reg3], 2))[-16:]
             register["111"] = "0000000000001000"
 
     if op == "01011":
@@ -98,18 +98,23 @@ def typeD(op,reg1,address):
 
 def typeE(op,address,pc):
     if op == "01111":
+        register["111"] = "0000000000000000"
         run(int(address,2),lines)
 
     elif op == "10000" and register["111"] == "0000000000000100":
+        register["111"] = "0000000000000000"
         run(int(address,2),lines)
 
     elif op == "10001" and register["111"] == "0000000000000010":
+        register["111"] = "0000000000000000"
         run(int(address,2),lines)
 
     elif op == "10010" and register["111"] == "0000000000000001":
+        register["111"] = "0000000000000000"
         run(int(address,2),lines)
 
     else :
+        register["111"] = "0000000000000000"
         run(pc , lines)
 
 def to16(s):
