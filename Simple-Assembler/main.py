@@ -1,4 +1,4 @@
-
+import sys
 opcodes= {
  "add":"00000" ,  "sub":"00001" , "mov":"00010", "mov_r": "00011", "ld": "00100" , "st": "00101", "mul": "00110",
  "div": "00111",  "rs":"01000", "ls": "01001", "xor":"01010", "or": "01011", "and": "01100", "not":"01101",
@@ -6,6 +6,7 @@ opcodes= {
 }
 #replace key with value on in txt file, hecne defined dict
 #since there are 2 move commands and dono ka name is mov to usi time based on arg we gotta check is it mov_r or mov_i
+
 
 
 register= {
@@ -20,6 +21,7 @@ instruction_length ={ "add":"4" ,  "sub":"4" , "mov":"3", "mov_r": "3", "ld": "3
 
 def decimalToBinary(n):
     return "{0:b}".format(int(n))
+ 
 
 def length_adjuster(s):
     if(len(s)<8):
@@ -31,6 +33,7 @@ def check_if_hlt_last(line):
 
     for i in range(len(line)):
         g=line[i].split()
+     
 
         if(g[1]== "hlt" or (len(g)>2 and g[2]=="hlt" ) ):
             if(i==len(line)-1): #there was no variable, only instructions and hlt
@@ -188,9 +191,12 @@ def check_arguments_after_instruction(lines):
 
 
 error_counter=0
-f= open(r"C:\Users\Bhan\Desktop\demo.txt")
+'''f= open(r"input.txt")'''
+complete_input = sys.stdin.read()
 
-lines=[]
+lines=(complete_input.split("\n"))
+
+'''lines=[]
 while True:
     x= f.readline()  # this returns the each line that ends with /n , basically used to separate commands
 
@@ -198,7 +204,7 @@ while True:
         break
     lines.append(x.strip()) #store in a list the new lines, using strip to remove extra white spaces if any
 f.close()
-
+'''
 line=[]
 c=0
 
