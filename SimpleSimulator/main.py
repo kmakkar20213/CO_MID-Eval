@@ -53,11 +53,11 @@ def typeB(op , reg1 , imm):
         if int(imm,2) <= 255:
             register[reg1] = imm
 
-    if op == "01000":
-        register[reg1] = register[reg1][int(imm,2):] + ("0"**int(imm,2))
-
     if op == "01001":
-        register[reg1] = ("0"**int(imm,2)) +  register[reg1][:16 - int(imm,2)]
+        register[reg1] = to16(register[reg1])[int(imm,2):] + ("0"*int(imm,2))
+
+    if op == "01000":
+        register[reg1] = ("0"*int(imm,2)) +  to16(register[reg1])[:(16 - int(imm,2))]
 
 
 def typeC(op , reg1 , reg2):
@@ -69,8 +69,17 @@ def typeC(op , reg1 , reg2):
         register["000"] = reg1 // reg2
         register['001'] = reg1%reg2
         register["111"] = "0000000000000000"
+
     if op == "01101":
-        register[reg1] = bin(~int(register[reg2],2))[2,]
+        s = register[reg2]
+        s = to16(s)
+        temp = ""
+        for i in s:
+            if i == "0":
+                temp += '1'
+            else:
+                temp +='0'
+        register[reg1] = temp
         register["111"] = "0000000000000000"
 
     if op == "01110":
