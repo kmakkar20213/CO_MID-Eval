@@ -471,8 +471,8 @@ if(error_counter==0):
                 b = "00000"
                 syntax_check = sub_line[2]!= "FLAGS" and check_valid_reg_name((sub_line[2])) and check_valid_reg_name((sub_line[3]))
                 if (syntax_check):
-                    c = sub_line[2]
-                    d = sub_line[3]
+                    c = register[sub_line[2]]
+                    d = register[sub_line[3]]
                     line[i] = a + b + c + d
                 else:
                     error_on_line = str(find_line_number_2(str(sub_line[1] + " "+ sub_line[2] + " "+ sub_line[3]), lines) - 1)
@@ -784,8 +784,8 @@ if(error_counter==0):
                         b = "00000"
                         syntax_check = check_valid_reg_name((sub_line[3])) and check_valid_reg_name((sub_line[4]))
                         if (syntax_check):
-                            c = sub_line[3]
-                            d = sub_line[4]
+                            c = register[sub_line[3]]
+                            d = register[sub_line[4]]
                             line[i] = a + b + c + d
                         else:
                             error_on_line = str(find_line_number_2(str(sub_line[1] +": "+ sub_line[2] +" "+ sub_line[3] +" "+ sub_line[4]), lines) - 1)
