@@ -66,8 +66,8 @@ def typeC(op , reg1 , reg2):
         register["111"] = "0000000000000000"
 
     if op == '00111':
-        register["000"] = reg1 // reg2
-        register['001'] = reg1%reg2
+        register["000"] = bin(int(register[reg1],2) // int(register[reg2],2))[2:]
+        register['001'] = bin(int(register[reg1],2) % int(register[reg2],2))[2:]
         register["111"] = "0000000000000000"
 
     if op == "01101":
